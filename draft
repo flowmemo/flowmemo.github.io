@@ -1,0 +1,78 @@
+最近在论坛看到有位同学问了一个问题 http://bbs.byr.cn/#!article/WWWTechnology/34744
+跟大家分享一下吧自己的想法吧.
+
+代码先贴一下：
+setTimeout(function(){
+  console.log(1);
+  var link=document.getElementById("link");
+  link.style.backgroundColor="blue";
+  var d =+ new Date();
+  while(+new Date()-d<2000){};
+}, 0);
+
+对于setTimeout的工作机制我相信很多同学都了解了.如果不了解的话可以先去了解在看接下来的内容.
+另外我对于浏览器的渲染机制省略了很多内容.详细的资料我会附在最后大家有兴趣自己看（很多我自己都没看完XD）.
+在不影响分析前提下.我把代码修改一下.变成这样
+代码1：
+console.log('change color start')
+document.body.style.backgroundColor='blue'
+console.log('change color end')
+var d=+new Date()
+while(+new Date()-d<2000){}
+console.log('All end')
+
+大概就是把setTimeout去掉.加了点log信息.然后代码风格改成了我常用的standardjs[3]风格.
+
+上面这段代码在chrome49中运行结果是：
+打印'change color start'
+打印'change color end'
+等待两秒···
+打印'All end'
+背景变蓝
+
+好.我们接下来加一句alert, 如下
+代码2：
+console.log('change style start')
+document.body.style.backgroundColor='blue'
+console.log('change style end')
+alert('change!')
+var d=+new Date()
+while(+new Date()-d<2000){}
+console.log('All end')
+
+猜猜这段代码的结果？
+结果是：
+打印'change color start'
+打印'change color end'
+弹出对话框同时背景变蓝
+等待两秒···
+打印'All end'
+
+为什么第一段代码背景没有立马更新呢？为什么第二段代码在alert处就更新了呢？
+
+浏览器[u]一般[/u]是单线程的.靠主线程完成html、css、js解析.构建dom树、render树.绘图等.
+
+
+在第一段代码对于js是同步的.就是说js引擎从第一句执行开始.到最后一句结束.js是没有停歇的.同时浏览器主线程也没有停歇.都用来执行js代码了.
+这段时间.浏览器的主线程只是用来执行js代码.没有机会进行渲染.当这段代码执行完之后.浏览器才能去进行绘图.把背景绘成蓝色的.
+
+再来看第二段代码
+在alert函数执行后.弹出对话框.如果你不点确认的话.js引擎就被阻塞了.就直接停在那里了.但是浏览器的主线程得以空出来进行渲染.把背景变成蓝色的.
+
+然后提醒一下.改变背景是一个比较简单的操作. 浏览器的渲染过程有很多不.什么layout/reflow/repaint/composite...想了解的可以搜一搜文档.
+
+另外浏览器的开发者工具有用的地方非常多.现在chrome, firefox, ie等都带了性能分析的工具.可以采集信息告诉你浏览器干了什么.想了解渲染过程也通过它来查看.比如Chrome还会提醒你强制reflow会影响性能.这些都有用.
+
+还有就是我觉得大家除非有明确的理由和目标.没有比较在这些地方花太多的时间.这部分没有标准.有些浏览器的行为还不一样.比如加断点调试时的渲染机制和requestAnimationFrame的渲染机制还都有些区别.就不展开说了.
+我也是初学者.有说的不准的地方欢迎交流哈.微博：@flowmemo http://weibo.com/flowmemo
+
+[1] http://www.html5rocks.com/en/tutorials/internals/howbrowserswork/ 
+    讲浏览器的工作原理.网络.html, css, js文件解析.渲染机制都讲了.有中文翻译.点开可以找到.
+[2] https://www.chromium.org/developers/how-tos/trace-event-profiling-tool/trace-event-reading#TOC-Web-page-rendering-CSS-layout-reflow-etc-is-lazy
+    chromium的文档.这部分标题就是Web-page-rendering-CSS-layout-reflow-etc-is-lazy
+[3] http://standardjs.com/ 
+    一个不加分号的js代码风格
+[4] http://kellegous.com/j/2013/01/26/layout-performance/ 
+    带有benchmark的比较文章
+[5] http://blog.chromium.org/2008/09/multi-process-architecture.html
+    chrome/chromium是多进程的.js引擎繁忙是依然可以拖动窗口.
