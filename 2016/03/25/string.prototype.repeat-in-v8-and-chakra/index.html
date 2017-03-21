@@ -1,0 +1,212 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>String.prototype.repeat在V8和Chakra中的实现 | flowmemo&#39;s memo</title>
+  <meta name="author" content="flowmemo">
+  
+  <meta name="description" content="最近一个left-pad事件搞得javascript圈沸沸扬扬的. 我们暂且把这个事情放一边, 来看看left-pad本身的实现.
+left-pad的源码如下:module.exports = leftpad;function leftpad (str, len, ch) &amp;#123;  str =">
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  <meta property="og:title" content="String.prototype.repeat在V8和Chakra中的实现"/>
+  <meta property="og:site_name" content="flowmemo&#39;s memo"/>
+
+  
+    <meta property="og:image" content="undefined"/>
+  
+
+  <link href="/favicon.png" rel="icon">
+  <link rel="alternate" href="/atom.xml" title="flowmemo&#39;s memo" type="application/atom+xml">
+  <link rel="stylesheet" href="/css/style.css" media="screen" type="text/css">
+  <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+  
+
+</head>
+
+
+<body>
+  <header id="header" class="inner"><div class="alignleft">
+  <h1><a href="/">flowmemo&#39;s memo</a></h1>
+  <h2><a href="/"></a></h2>
+</div>
+<nav id="main-nav" class="alignright">
+  <ul>
+    
+      <li><a href="/">Home</a></li>
+    
+      <li><a href="/archives">Archives</a></li>
+    
+  </ul>
+  <div class="clearfix"></div>
+</nav>
+<div class="clearfix"></div>
+</header>
+  <div id="content" class="inner">
+    <div id="main-col" class="alignleft"><div id="wrapper"><article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2016-03-24T16:00:00.000Z"><a href="/2016/03/25/string.prototype.repeat-in-v8-and-chakra/">2016-03-25</a></time>
+      
+      
+  
+    <h1 class="title">String.prototype.repeat在V8和Chakra中的实现</h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <p>最近一个<a href="https://www.zhihu.com/question/41694868" target="_blank" rel="external">left-pad事件</a>搞得javascript圈沸沸扬扬的. 我们暂且把这个事情放一边, 来看看left-pad本身的实现.</p>
+<p><a href="https://github.com/azer/left-pad/blob/master/index.js" target="_blank" rel="external">left-pad</a>的源码如下:<br><figure class="highlight javascript"><table><tr><td class="code"><pre><div class="line"><span class="built_in">module</span>.exports = leftpad;</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">function</span> <span class="title">leftpad</span> (<span class="params">str, len, ch</span>) </span>&#123;</div><div class="line">  str = <span class="built_in">String</span>(str);</div><div class="line">  <span class="keyword">var</span> i = <span class="number">-1</span>;</div><div class="line">  <span class="keyword">if</span> (!ch &amp;&amp; ch !== <span class="number">0</span>) ch = <span class="string">' '</span>;</div><div class="line">  len = len - str.length;</div><div class="line">  <span class="keyword">while</span> (++i &lt; len) &#123;</div><div class="line">    str = ch + str;</div><div class="line">  &#125;</div><div class="line">  <span class="keyword">return</span> str;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>这段程序的作用是, 给一个字符串str(或可以转成str的变量), 用字符ch在左边补位, 将其补到长度为len.<br>当然这个程序没做充足的参数检查, 这个就不细说了. 我们分析一下它的效率:<br>如果要补n位, 字符串加法也就是String.prototype.concat的执行次数是n次, 也就是O(n).</p>
+<p>我们来看一下如何用ES6的String.prototype.repeat来实现这个功能:<br>假定<strong>str是字符串, len是非负整数, ch参数可选(如果有的话必须是长度为1的字符串)</strong> <em>所以我更喜欢强类型语言</em>.</p>
+<figure class="highlight javascript"><table><tr><td class="code"><pre><div class="line"><span class="function"><span class="keyword">function</span> <span class="title">leftpadES6</span> (<span class="params">str, len, ch</span>) </span>&#123;</div><div class="line">  ch = ch||<span class="string">' '</span></div><div class="line">  <span class="keyword">return</span> ch.repeat(len - str.length) + str</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>当然还没完, 这么写的效率怎么样呢, 我们得看一下js引擎对String.prototype.repeat的实现.</p>
+<h2 id="V8"><a href="#V8" class="headerlink" title="V8"></a>V8</h2><p>下面是Chrome/Chromuim的js引擎V8的实现, 直接用js写的<br>源码地址:<br><a href="https://code.google.com/p/chromium/codesearch#chromium/src/v8/src/js/string.js&amp;l=672" target="_blank" rel="external">https://code.google.com/p/chromium/codesearch#chromium/src/v8/src/js/string.js&amp;l=672</a></p>
+<figure class="highlight javascript"><table><tr><td class="code"><pre><div class="line"><span class="comment">// ES6, section 21.1.3.13</span></div><div class="line"><span class="function"><span class="keyword">function</span> <span class="title">StringRepeat</span>(<span class="params">count</span>) </span>&#123;</div><div class="line">  CHECK_OBJECT_COERCIBLE(<span class="keyword">this</span>, <span class="string">"String.prototype.repeat"</span>);</div><div class="line">  </div><div class="line">  <span class="keyword">var</span> s = TO_STRING(<span class="keyword">this</span>);</div><div class="line">  <span class="keyword">var</span> n = TO_INTEGER(count);</div><div class="line"></div><div class="line">  <span class="keyword">if</span> (n &lt; <span class="number">0</span> || n === INFINITY) <span class="keyword">throw</span> MakeRangeError(kInvalidCountValue);</div><div class="line"></div><div class="line">  <span class="comment">// Early return to allow an arbitrarily-large repeat of the empty string.</span></div><div class="line">  <span class="keyword">if</span> (s.length === <span class="number">0</span>) <span class="keyword">return</span> <span class="string">""</span>;</div><div class="line"></div><div class="line">  <span class="comment">// The maximum string length is stored in a smi, so a longer repeat</span></div><div class="line">  <span class="comment">// must result in a range error.</span></div><div class="line">  <span class="keyword">if</span> (n &gt; %_MaxSmi()) <span class="keyword">throw</span> MakeRangeError(kInvalidCountValue);</div><div class="line"></div><div class="line">  <span class="keyword">var</span> r = <span class="string">""</span>;</div><div class="line">  <span class="keyword">while</span> (<span class="literal">true</span>) &#123;</div><div class="line">    <span class="keyword">if</span> (n &amp; <span class="number">1</span>) r += s;</div><div class="line">    n &gt;&gt;= <span class="number">1</span>;</div><div class="line">    <span class="keyword">if</span> (n === <span class="number">0</span>) <span class="keyword">return</span> r;</div><div class="line">    s += s;</div><div class="line">  &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>忽略参数检查, 我们来关注算法本身. 这个算法的核心是, 使用字符串重复次数count的二进制表示, 通过字符串的自加来减少concat的次数. 这个算法和快速幂算法非常像. 详细的算法解释可以看这篇文章: <a href="http://www.2ality.com/2014/01/efficient-string-repeat.html" target="_blank" rel="external">http://www.2ality.com/2014/01/efficient-string-repeat.html</a></p>
+<p>举例个例子, 如果count = 6 , 那个它的二进制表示就为110<sub>2</sub> = 4*1 + 2*1 + 1*0. 也就是说对于长度为6的字符串s, 有<br>s.repeat(6) = s.repeat(4) + s.repeat(2)</p>
+<p>注意到每次循环最多有两次concat的操作, 而循环次数约等于logn, 所以按concat的次数来记它的复杂度为O(logn)</p>
+<p>Firefox的实现类似, 地址在这里<a href="https://dxr.mozilla.org/mozilla-central/source/js/src/builtin/String.js#159" target="_blank" rel="external">https://dxr.mozilla.org/mozilla-central/source/js/src/builtin/String.js#159</a> .</p>
+<h2 id="Chakra"><a href="#Chakra" class="headerlink" title="Chakra"></a>Chakra</h2><p>好了, 我们来看看微软的Edge浏览器所使用的js引擎, Chakra对String.prototype.repeat的实现, 它是用的C++.<br>源码地址: <a href="https://github.com/Microsoft/ChakraCore/blob/master/lib/Runtime/Library/JavascriptString.cpp#L2395" target="_blank" rel="external">https://github.com/Microsoft/ChakraCore/blob/master/lib/Runtime/Library/JavascriptString.cpp#L2395</a></p>
+<p>Chakra中实现repeat分了两个函数, 一个是JavascriptString::EntryRepeat, 它的主要是做一些初始化工作, 参数检查, 特殊情况的处理. 核心算法是JavascriptString::RepeatCore, 代码如下</p>
+<figure class="highlight c++"><table><tr><td class="code"><pre><div class="line">JavascriptString* JavascriptString::RepeatCore(JavascriptString* currentString, <span class="keyword">charcount_t</span> count, ScriptContext* scriptContext)</div><div class="line">  &#123;</div><div class="line">    Assert(currentString != <span class="literal">nullptr</span>);</div><div class="line">    Assert(currentString-&gt;GetLength() &gt; <span class="number">0</span>);</div><div class="line">    Assert(count &gt; <span class="number">0</span>);</div><div class="line"></div><div class="line">    <span class="keyword">const</span> char16* currentRawString = currentString-&gt;GetString();</div><div class="line">    <span class="keyword">int</span> currentLength = currentString-&gt;GetLength();</div><div class="line"></div><div class="line">    <span class="keyword">charcount_t</span> finalBufferCount = UInt32Math::Add(UInt32Math::Mul(count, currentLength), <span class="number">1</span>);</div><div class="line">    char16* buffer = RecyclerNewArrayLeaf(scriptContext-&gt;GetRecycler(), char16, finalBufferCount);</div><div class="line"></div><div class="line">    <span class="keyword">if</span> (currentLength == <span class="number">1</span>)</div><div class="line">    &#123;</div><div class="line">        wmemset(buffer, currentRawString[<span class="number">0</span>], finalBufferCount - <span class="number">1</span>);</div><div class="line">        buffer[finalBufferCount - <span class="number">1</span>] = <span class="string">'\0'</span>;</div><div class="line">    &#125;</div><div class="line">    <span class="keyword">else</span></div><div class="line">    &#123;</div><div class="line">        char16* bufferDst = buffer;</div><div class="line">        <span class="keyword">size_t</span> bufferDstSize = finalBufferCount;</div><div class="line"></div><div class="line">        <span class="keyword">for</span> (<span class="keyword">charcount_t</span> i = <span class="number">0</span>; i &lt; count; i += <span class="number">1</span>)</div><div class="line">        &#123;</div><div class="line">            js_wmemcpy_s(bufferDst, bufferDstSize, currentRawString, currentLength);</div><div class="line">            bufferDst += currentLength;</div><div class="line">            bufferDstSize -= currentLength;</div><div class="line">        &#125;</div><div class="line">        Assert(bufferDstSize == <span class="number">1</span>);</div><div class="line">        *bufferDst = <span class="string">'\0'</span>;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    <span class="keyword">return</span> JavascriptString::NewWithBuffer(buffer, finalBufferCount - <span class="number">1</span>, scriptContext);</div><div class="line">  &#125;</div></pre></td></tr></table></figure>
+<p>看起来很长是吗? 不要被吓到了, 我们只关心核心算法, 其实就这一小段:</p>
+<figure class="highlight c++"><table><tr><td class="code"><pre><div class="line"><span class="keyword">if</span> (currentLength == <span class="number">1</span>)</div><div class="line">&#123;</div><div class="line">    wmemset(buffer, currentRawString[<span class="number">0</span>], finalBufferCount - <span class="number">1</span>);</div><div class="line">    buffer[finalBufferCount - <span class="number">1</span>] = <span class="string">'\0'</span>;</div><div class="line">&#125;</div><div class="line"><span class="keyword">else</span></div><div class="line">&#123;</div><div class="line">    char16* bufferDst = buffer;</div><div class="line">    <span class="keyword">size_t</span> bufferDstSize = finalBufferCount;</div><div class="line"></div><div class="line">    <span class="keyword">for</span> (<span class="keyword">charcount_t</span> i = <span class="number">0</span>; i &lt; count; i += <span class="number">1</span>)</div><div class="line">    &#123;</div><div class="line">        js_wmemcpy_s(bufferDst, bufferDstSize, currentRawString, currentLength);</div><div class="line">        bufferDst += currentLength;</div><div class="line">        bufferDstSize -= currentLength;</div><div class="line">    &#125;</div><div class="line">    Assert(bufferDstSize == <span class="number">1</span>);</div><div class="line">    *bufferDst = <span class="string">'\0'</span>;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>大意是如果字符串长度本身为1, 也就是一个字符, 那就直接用wmemset(类似于memset)将一块内存全用这个字符填充; 如果不为字符串长度不为1, 就一次连接一个字符串. <em>忽略js_wmemcpy_s</em></p>
+<h2 id="结语"><a href="#结语" class="headerlink" title="结语"></a>结语</h2><p>我们现在来考虑一下, 为什么V8使用了优化过的算法, 而Chakra使用了朴素/naive/trival的算法.</p>
+<p>我们之前说了, V8实现的字符串加法的操作次数是O(logn)的<del>, 但是, <strong>我们要把一个字符串重复n次, 一定要得在要对O(n)的内存进行写操作</strong></del>.<br><strong>update1:</strong> 经过<a href="http://weibo.com/2451315930" target="_blank" rel="external">@哦胖茶</a>巨巨的提醒(<a href="http://weibo.com/2451315930/DowQCo6wN" target="_blank" rel="external">http://weibo.com/2451315930/DowQCo6wN</a>), V8、ChakraCore 和 Rhino 底层实现字符串拼接用的都是<a href="https://en.wikipedia.org/wiki/Rope_%28data_structure%29" target="_blank" rel="external">rope(tree)</a>. 对于rope来说字符串连接不需要为新字符串开辟被内存并把内容写进去, 而是合并两个二叉树, 详见这里: <a href="https://en.wikipedia.org/wiki/Rope_%28data_structure%29#Concat" target="_blank" rel="external">https://en.wikipedia.org/wiki/Rope_%28data_structure%29#Concat</a> . </p>
+<p>这么看的话, 在不考虑rope摊平的情况下, 仅从算法复杂度的角度来看V8的rope连接和快速幂实现是比Chakra的要好. Chakra里字符串也用了rope, 但是对repeat的实现没有用rope, 直接就是复制内存. 字符串在内存是就是以连续内存的形式存储的话, 把一个字符串重复n次, 一定要得在要对O(n)的内存进行写操作, 所以快速幂优化意义不大.</p>
+<p>至于V8的这种字符串加法用rope、js实现用快速幂的方法好, 还是Chakra这种直接复制内存的方法好, 我没有跑benchmark, 就不下结论了.</p>
+<p>最后想说的是, 虽然这篇文章关注的是实现算法, 但是参数检查、边界条件的处理, 也非常的重要, 千万不能觉得无所谓. 可以说工具函数中edge case的处理经常比算法更为头疼…</p>
+<p>P.S.1 我在知道V8, Chakra的字符串实现用了rope后对本文进行过修改<br>P.S.2 我之前搞错了, V8中字符串“+”操作符不依赖String.prototype.concat, 实际正好相反，是String.prototype.concat的实现直接用了字符串“+”运算. 源码: <a href="https://code.google.com/p/chromium/codesearch#chromium/src/v8/src/js/string.js&amp;l=84" target="_blank" rel="external">https://code.google.com/p/chromium/codesearch#chromium/src/v8/src/js/string.js&amp;l=84</a></p>
+
+      
+    </div>
+    <footer>
+      
+        
+        
+  
+  <div class="tags">
+    <a href="/tags/javascript/">javascript</a>, <a href="/tags/js/">js</a>, <a href="/tags/V8/">V8</a>, <a href="/tags/Chakra/">Chakra</a>, <a href="/tags/algorithm/">algorithm</a>
+  </div>
+
+        
+  <div class="addthis addthis_toolbox addthis_default_style">
+    
+      <a class="addthis_button_facebook_like" fb:like:layout="button_count"></a>
+    
+    
+      <a class="addthis_button_tweet"></a>
+    
+    
+      <a class="addthis_button_google_plusone" g:plusone:size="medium"></a>
+    
+    
+      <a class="addthis_button_pinterest_pinit" pi:pinit:layout="horizontal"></a>
+    
+    <a class="addthis_counter addthis_pill_style"></a>
+  </div>
+  <script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js"></script>
+
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+<section id="comment">
+  <h1 class="title">Comments</h1>
+
+  
+  <div id="disqus_thread">
+    <noscript>Please enable JavaScript to view the <a href="//disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+  </div>
+  
+</section>
+
+</div></div>
+    <aside id="sidebar" class="alignright">
+  <div class="search">
+  <form action="//google.com/search" method="get" accept-charset="utf-8">
+    <input type="search" name="q" results="0" placeholder="Search">
+    <input type="hidden" name="q" value="site:flowmemo.github.io">
+  </form>
+</div>
+
+  
+
+  
+<div class="widget tag">
+  <h3 class="title">Tags</h3>
+  <ul class="entry">
+  
+    <li><a href="/tags/ASI/">ASI</a><small>1</small></li>
+  
+    <li><a href="/tags/Chakra/">Chakra</a><small>1</small></li>
+  
+    <li><a href="/tags/ECMA-262/">ECMA-262</a><small>1</small></li>
+  
+    <li><a href="/tags/ECMAScript/">ECMAScript</a><small>1</small></li>
+  
+    <li><a href="/tags/V8/">V8</a><small>1</small></li>
+  
+    <li><a href="/tags/algorithm/">algorithm</a><small>1</small></li>
+  
+    <li><a href="/tags/front-end/">front-end</a><small>1</small></li>
+  
+    <li><a href="/tags/grammar/">grammar</a><small>1</small></li>
+  
+    <li><a href="/tags/javascript/">javascript</a><small>4</small></li>
+  
+    <li><a href="/tags/js/">js</a><small>4</small></li>
+  
+  </ul>
+</div>
+
+</aside>
+    <div class="clearfix"></div>
+  </div>
+  <footer id="footer" class="inner"><div class="alignleft">
+  
+  &copy; 2017 flowmemo
+  
+</div>
+<div class="clearfix"></div></footer>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+
+<script type="text/javascript">
+var disqus_shortname = 'flowmemo';
+
+(function(){
+  var dsq = document.createElement('script');
+  dsq.type = 'text/javascript';
+  dsq.async = true;
+  dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+  (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+}());
+</script>
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+(function($){
+  $('.fancybox').fancybox();
+})(jQuery);
+</script>
+
+</body>
+</html>

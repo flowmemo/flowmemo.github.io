@@ -1,0 +1,192 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>为什么this变了 | flowmemo&#39;s memo</title>
+  <meta name="author" content="flowmemo">
+  
+  <meta name="description" content="在微博和知乎上都见过这个问题，就把我在知乎的回答整理搬运过来吧。先看以下代码：var name = &quot;The Window&quot;;var object = &amp;#123;    name : &quot;My Object&quot;,    getName : function()&amp;#123;        console">
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  <meta property="og:title" content="为什么this变了"/>
+  <meta property="og:site_name" content="flowmemo&#39;s memo"/>
+
+  
+    <meta property="og:image" content="undefined"/>
+  
+
+  <link href="/favicon.png" rel="icon">
+  <link rel="alternate" href="/atom.xml" title="flowmemo&#39;s memo" type="application/atom+xml">
+  <link rel="stylesheet" href="/css/style.css" media="screen" type="text/css">
+  <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+  
+
+</head>
+
+
+<body>
+  <header id="header" class="inner"><div class="alignleft">
+  <h1><a href="/">flowmemo&#39;s memo</a></h1>
+  <h2><a href="/"></a></h2>
+</div>
+<nav id="main-nav" class="alignright">
+  <ul>
+    
+      <li><a href="/">Home</a></li>
+    
+      <li><a href="/archives">Archives</a></li>
+    
+  </ul>
+  <div class="clearfix"></div>
+</nav>
+<div class="clearfix"></div>
+</header>
+  <div id="content" class="inner">
+    <div id="main-col" class="alignleft"><div id="wrapper"><article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2017-03-01T13:00:44.000Z"><a href="/2017/03/01/why-this-change/">2017-03-01</a></time>
+      
+      
+  
+    <h1 class="title">为什么this变了</h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <p>在微博和知乎上都见过这个问题，就把我在知乎的<a href="https://www.zhihu.com/question/56412638/answer/148937830" target="_blank" rel="external">回答</a>整理搬运过来吧。<br>先看以下代码：<br><figure class="highlight javascript"><table><tr><td class="code"><pre><div class="line"><span class="keyword">var</span> name = <span class="string">"The Window"</span>;</div><div class="line"></div><div class="line"><span class="keyword">var</span> object = &#123;</div><div class="line">    name : <span class="string">"My Object"</span>,</div><div class="line">    getName : <span class="function"><span class="keyword">function</span>(<span class="params"></span>)</span>&#123;</div><div class="line">        <span class="built_in">console</span>.log(<span class="keyword">this</span>.name);</div><div class="line">    &#125;</div><div class="line">&#125;;</div><div class="line"></div><div class="line"><span class="comment">// 以下输出</span></div><div class="line"></div><div class="line">object.getName(); <span class="comment">// "My Object"</span></div><div class="line">(object.getName)(); <span class="comment">// "My Object"</span></div><div class="line">(object.getName = object.getName)(); <span class="comment">// "The Window"</span></div></pre></td></tr></table></figure></p>
+<p>第一行的结果大家应该都知道，不多说了。第二行可能有人会有些疑问，先跳过，我先说第三行的。</p>
+<p>第三行 『(object.getName = object.getName) 』圆括号里的内容是AssignmentExpression，它的返回值是『GetValue(等号右边的表达式)』。注意这个GetValue是规范中的抽象操作，object.getName经过这个GetValue操作之后就不是Reference type了，丢失了它的this信息。</p>
+<p>而第二行实际和第一行是一样的。这个圆括号在规范中叫grouping operator，它不执行GetValue操作，所以函数调用的时候函数知道自己是通过object进行调用的。<br>（实际上你可以试一下，『(object.foo) = 1)』是合法的语句）</p>
+<h3 id="规范中的相应部分"><a href="#规范中的相应部分" class="headerlink" title="规范中的相应部分:"></a>规范中的相应部分:</h3><p>[1] 关于函数调用的部分，在这里你可以看出来function call在不同情况下对this的处理<br><a href="http://www.ecma-international.org/ecma-262/7.0/index.html#sec-function-calls-runtime-semantics-evaluation" target="_blank" rel="external">http://www.ecma-international.org/ecma-262/7.0/index.html#sec-function-calls-runtime-semantics-evaluation</a><br>[2] AssignmentExpression的执行过程 <a href="http://www.ecma-international.org/ecma-262/7.0/index.html#sec-assignment-operators-runtime-semantics-evaluation" target="_blank" rel="external">http://www.ecma-international.org/ecma-262/7.0/index.html#sec-assignment-operators-runtime-semantics-evaluation</a><br>[3] Grouping operator的执行过程 <a href="http://www.ecma-international.org/ecma-262/7.0/index.html#sec-grouping-operator-runtime-semantics-evaluation" target="_blank" rel="external">http://www.ecma-international.org/ecma-262/7.0/index.html#sec-grouping-operator-runtime-semantics-evaluation</a> </p>
+
+      
+    </div>
+    <footer>
+      
+        
+        
+  
+  <div class="tags">
+    <a href="/tags/javascript/">javascript</a>, <a href="/tags/js/">js</a>, <a href="/tags/ECMAScript/">ECMAScript</a>, <a href="/tags/ECMA-262/">ECMA-262</a>
+  </div>
+
+        
+  <div class="addthis addthis_toolbox addthis_default_style">
+    
+      <a class="addthis_button_facebook_like" fb:like:layout="button_count"></a>
+    
+    
+      <a class="addthis_button_tweet"></a>
+    
+    
+      <a class="addthis_button_google_plusone" g:plusone:size="medium"></a>
+    
+    
+      <a class="addthis_button_pinterest_pinit" pi:pinit:layout="horizontal"></a>
+    
+    <a class="addthis_counter addthis_pill_style"></a>
+  </div>
+  <script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js"></script>
+
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+<section id="comment">
+  <h1 class="title">Comments</h1>
+
+  
+  <div id="disqus_thread">
+    <noscript>Please enable JavaScript to view the <a href="//disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+  </div>
+  
+</section>
+
+</div></div>
+    <aside id="sidebar" class="alignright">
+  <div class="search">
+  <form action="//google.com/search" method="get" accept-charset="utf-8">
+    <input type="search" name="q" results="0" placeholder="Search">
+    <input type="hidden" name="q" value="site:flowmemo.github.io">
+  </form>
+</div>
+
+  
+
+  
+<div class="widget tag">
+  <h3 class="title">Tags</h3>
+  <ul class="entry">
+  
+    <li><a href="/tags/ASI/">ASI</a><small>1</small></li>
+  
+    <li><a href="/tags/Chakra/">Chakra</a><small>1</small></li>
+  
+    <li><a href="/tags/ECMA-262/">ECMA-262</a><small>1</small></li>
+  
+    <li><a href="/tags/ECMAScript/">ECMAScript</a><small>1</small></li>
+  
+    <li><a href="/tags/V8/">V8</a><small>1</small></li>
+  
+    <li><a href="/tags/algorithm/">algorithm</a><small>1</small></li>
+  
+    <li><a href="/tags/front-end/">front-end</a><small>1</small></li>
+  
+    <li><a href="/tags/grammar/">grammar</a><small>1</small></li>
+  
+    <li><a href="/tags/javascript/">javascript</a><small>4</small></li>
+  
+    <li><a href="/tags/js/">js</a><small>4</small></li>
+  
+  </ul>
+</div>
+
+</aside>
+    <div class="clearfix"></div>
+  </div>
+  <footer id="footer" class="inner"><div class="alignleft">
+  
+  &copy; 2017 flowmemo
+  
+</div>
+<div class="clearfix"></div></footer>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+
+<script type="text/javascript">
+var disqus_shortname = 'flowmemo';
+
+(function(){
+  var dsq = document.createElement('script');
+  dsq.type = 'text/javascript';
+  dsq.async = true;
+  dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+  (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+}());
+</script>
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+(function($){
+  $('.fancybox').fancybox();
+})(jQuery);
+</script>
+
+</body>
+</html>

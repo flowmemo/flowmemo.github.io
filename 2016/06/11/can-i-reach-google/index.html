@@ -1,0 +1,193 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>Can I Reach Google —— 一个查找可用谷歌域名的小工具 | flowmemo&#39;s memo</title>
+  <meta name="author" content="flowmemo">
+  
+  <meta name="description" content="由于教育网的一些玄学原因, Google还是偶尔可以上的.所以写了一个小网页来检测Google的众多域名的可到达性. 点开就能用,地址在这里:https://flowmemo.github.io/can-i-reach-google/
+原理很简单, 访问Google桌面版网页会请求一个名为tia.p">
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  <meta property="og:title" content="Can I Reach Google —— 一个查找可用谷歌域名的小工具"/>
+  <meta property="og:site_name" content="flowmemo&#39;s memo"/>
+
+  
+    <meta property="og:image" content="undefined"/>
+  
+
+  <link href="/favicon.png" rel="icon">
+  <link rel="alternate" href="/atom.xml" title="flowmemo&#39;s memo" type="application/atom+xml">
+  <link rel="stylesheet" href="/css/style.css" media="screen" type="text/css">
+  <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+  
+
+</head>
+
+
+<body>
+  <header id="header" class="inner"><div class="alignleft">
+  <h1><a href="/">flowmemo&#39;s memo</a></h1>
+  <h2><a href="/"></a></h2>
+</div>
+<nav id="main-nav" class="alignright">
+  <ul>
+    
+      <li><a href="/">Home</a></li>
+    
+      <li><a href="/archives">Archives</a></li>
+    
+  </ul>
+  <div class="clearfix"></div>
+</nav>
+<div class="clearfix"></div>
+</header>
+  <div id="content" class="inner">
+    <div id="main-col" class="alignleft"><div id="wrapper"><article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2016-06-11T12:11:53.000Z"><a href="/2016/06/11/can-i-reach-google/">2016-06-11</a></time>
+      
+      
+  
+    <h1 class="title">Can I Reach Google —— 一个查找可用谷歌域名的小工具</h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <p>由于教育网的一些玄学原因, Google还是偶尔可以上的.<br>所以写了一个小网页来检测Google的众多域名的可到达性. 点开就能用,地址在这里:<br><a href="https://flowmemo.github.io/can-i-reach-google/">https://flowmemo.github.io/can-i-reach-google/</a></p>
+<p>原理很简单, 访问Google桌面版网页会请求一个名为tia.png的文件, 是个图标, 大小为497B, 地址为<br><a href="https://www.google.com/textinputassistant/tia.png" target="_blank" rel="external">https://www.google.com/textinputassistant/tia.png</a>. 这个地址根据Google的域名不同而不同, 但是相对路径是一样的. 我写的工具就是向所有的Google域名请求这个图片, 成功加载就判定该域名为可到达. 至于为什么不用ajax是因为ajax还要考虑跨域问题, 而加载图片不用. Google域名来自<a href="https://www.google.com/supported_domains" target="_blank" rel="external">https://www.google.com/supported_domains</a></p>
+<p>请求图片的地址加了动态的querystring(时间戳 + ID), 主要是防止cache.</p>
+<p>如果你找到了可用地址, 建议按照我工具中给出的格式进行访问, 不要把https, www, 还有/ncr去掉, 这涉及到一些DNS和地区跳转之类玄学, 不细说了, 说不定明天就变了.</p>
+<p>这个小工具的地址: <a href="https://flowmemo.github.io/can-i-reach-google/">https://flowmemo.github.io/can-i-reach-google/</a><br>源码地址: <a href="https://github.com/flowmemo/can-i-reach-google" target="_blank" rel="external">https://github.com/flowmemo/can-i-reach-google</a></p>
+
+      
+    </div>
+    <footer>
+      
+        
+        
+  
+  <div class="tags">
+    <a href="/tags/front-end/">front-end</a>, <a href="/tags/javascript/">javascript</a>, <a href="/tags/js/">js</a>
+  </div>
+
+        
+  <div class="addthis addthis_toolbox addthis_default_style">
+    
+      <a class="addthis_button_facebook_like" fb:like:layout="button_count"></a>
+    
+    
+      <a class="addthis_button_tweet"></a>
+    
+    
+      <a class="addthis_button_google_plusone" g:plusone:size="medium"></a>
+    
+    
+      <a class="addthis_button_pinterest_pinit" pi:pinit:layout="horizontal"></a>
+    
+    <a class="addthis_counter addthis_pill_style"></a>
+  </div>
+  <script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js"></script>
+
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+<section id="comment">
+  <h1 class="title">Comments</h1>
+
+  
+  <div id="disqus_thread">
+    <noscript>Please enable JavaScript to view the <a href="//disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+  </div>
+  
+</section>
+
+</div></div>
+    <aside id="sidebar" class="alignright">
+  <div class="search">
+  <form action="//google.com/search" method="get" accept-charset="utf-8">
+    <input type="search" name="q" results="0" placeholder="Search">
+    <input type="hidden" name="q" value="site:flowmemo.github.io">
+  </form>
+</div>
+
+  
+
+  
+<div class="widget tag">
+  <h3 class="title">Tags</h3>
+  <ul class="entry">
+  
+    <li><a href="/tags/ASI/">ASI</a><small>1</small></li>
+  
+    <li><a href="/tags/Chakra/">Chakra</a><small>1</small></li>
+  
+    <li><a href="/tags/ECMA-262/">ECMA-262</a><small>1</small></li>
+  
+    <li><a href="/tags/ECMAScript/">ECMAScript</a><small>1</small></li>
+  
+    <li><a href="/tags/V8/">V8</a><small>1</small></li>
+  
+    <li><a href="/tags/algorithm/">algorithm</a><small>1</small></li>
+  
+    <li><a href="/tags/front-end/">front-end</a><small>1</small></li>
+  
+    <li><a href="/tags/grammar/">grammar</a><small>1</small></li>
+  
+    <li><a href="/tags/javascript/">javascript</a><small>4</small></li>
+  
+    <li><a href="/tags/js/">js</a><small>4</small></li>
+  
+  </ul>
+</div>
+
+</aside>
+    <div class="clearfix"></div>
+  </div>
+  <footer id="footer" class="inner"><div class="alignleft">
+  
+  &copy; 2017 flowmemo
+  
+</div>
+<div class="clearfix"></div></footer>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+
+<script type="text/javascript">
+var disqus_shortname = 'flowmemo';
+
+(function(){
+  var dsq = document.createElement('script');
+  dsq.type = 'text/javascript';
+  dsq.async = true;
+  dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+  (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+}());
+</script>
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+(function($){
+  $('.fancybox').fancybox();
+})(jQuery);
+</script>
+
+</body>
+</html>

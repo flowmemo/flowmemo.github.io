@@ -1,0 +1,220 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>js代码在什么位置可以换行 | flowmemo&#39;s memo</title>
+  <meta name="author" content="flowmemo">
+  
+  <meta name="description" content="一行过长的代码会影响阅读体验. 实际项目中，我们往往把过长的代码分成多行去写.比如在js中, promise链经常要分成多行写. 对此本人想到一个问题, 就是js中, 在什么地方换行是合法并且不破坏原有代码逻辑的.
+探究这个问题过程中本人造了一个小玩具, breakline, 顾名思义, 它的作用就">
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  <meta property="og:title" content="js代码在什么位置可以换行"/>
+  <meta property="og:site_name" content="flowmemo&#39;s memo"/>
+
+  
+    <meta property="og:image" content="undefined"/>
+  
+
+  <link href="/favicon.png" rel="icon">
+  <link rel="alternate" href="/atom.xml" title="flowmemo&#39;s memo" type="application/atom+xml">
+  <link rel="stylesheet" href="/css/style.css" media="screen" type="text/css">
+  <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+  
+
+</head>
+
+
+<body>
+  <header id="header" class="inner"><div class="alignleft">
+  <h1><a href="/">flowmemo&#39;s memo</a></h1>
+  <h2><a href="/"></a></h2>
+</div>
+<nav id="main-nav" class="alignright">
+  <ul>
+    
+      <li><a href="/">Home</a></li>
+    
+      <li><a href="/archives">Archives</a></li>
+    
+  </ul>
+  <div class="clearfix"></div>
+</nav>
+<div class="clearfix"></div>
+</header>
+  <div id="content" class="inner">
+    <div id="main-col" class="alignleft"><div id="wrapper"><article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2016-07-16T09:10:26.000Z"><a href="/2016/07/16/where-can-you-insert-a-linebreak-in-js/">2016-07-16</a></time>
+      
+      
+  
+    <h1 class="title">js代码在什么位置可以换行</h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <p>一行过长的代码会影响阅读体验. 实际项目中，我们往往把过长的代码分成多行去写.<br>比如在js中, promise链经常要分成多行写. 对此本人想到一个问题, 就是js中, 在什么地方换行是<strong>合法并且不破坏原有代码逻辑的</strong>.</p>
+<p>探究这个问题过程中本人造了一个小玩具, breakline, 顾名思义, 它的作用就是在不破话代码的逻辑的情况下把js代码拆成多行. 项目地址：<a href="https://github.com/flowmemo/breakline" target="_blank" rel="external">https://github.com/flowmemo/breakline</a></p>
+<p>我们接下来还是谈换行的问题. 为了简单起见, 本文不讨论注释中的换行符.</p>
+<h2 id="换行符的作用"><a href="#换行符的作用" class="headerlink" title="换行符的作用"></a>换行符的作用</h2><p>在一般的语言中, 换行符一般是意味着一个statement<sup>1</sup>的结束, 分号也通常有这个作用. 但是js中换行符并没有代表statement的结束的意思. 事实上在规范中, 换行符（规范中称为<em>line terminator</em>)在多数情况下和空格、tab的作用是一样的, 是为了分隔token以及方便阅读, <strong>除了…</strong></p>
+<ol>
+<li>换行符在某些情况下会触发自动分号插入（<strong>A</strong>utomatic <strong>S</strong>emicolon <strong>I</strong>nsertioin, 以下简称ASI）</li>
+<li>换行符本身是token的一部分, 比如在StringLiteral（单／双引号字符串, 必须通过<code>\</code>来escape）, Template和TemplateSubstitutionTail(这两个就是<em>`</em>包起来的字符串)中.</li>
+</ol>
+<p>以下为ECMA－262 7.0(也就是ES7、ES2016)规范中相应的描述：</p>
+<blockquote>
+<p>A line terminator cannot occur within any token except a StringLiteral, Template, or TemplateSubstitutionTail. Line terminators may only occur within a StringLiteral token as part of a LineContinuation.</p>
+</blockquote>
+<p>有了这些信息, 我们就应该知道在什么情况下可以换行了：只要你的新加的换行符不在上述的两个规则内就行.</p>
+<p>我们再继续探究这两个规则.</p>
+<h2 id="ASI"><a href="#ASI" class="headerlink" title="ASI"></a>ASI</h2><p>EMCA规范中有一部分专门讲了ASI, 在<a href="http://www.ecma-international.org/ecma-262/7.0/index.html#sec-automatic-semicolon-insertion" target="_blank" rel="external">http://www.ecma-international.org/ecma-262/7.0/index.html#sec-automatic-semicolon-insertion</a></p>
+<p>对于ASI这里就不展开细讲了, 这里只说ASI和换行相关的部分.</p>
+<h3 id="Offending-Token"><a href="#Offending-Token" class="headerlink" title="Offending Token"></a>Offending Token</h3><p>一个情况是, 换行符后的token和之前的token一起进行parse会出错, 那么换行符后的token叫做offend token. Offend token前会自动插入一个分号.<br>举例：<br><figure class="highlight js"><table><tr><td class="code"><pre><div class="line"><span class="keyword">var</span> foo</div><div class="line">foo = <span class="number">2</span></div></pre></td></tr></table></figure></p>
+<p>一共5个token, 按先后顺序是<code>var</code>, <code>foo</code>, <code>foo</code>, <code>=</code>, <code>2</code>. parser先解析了前两个token, 很好, 没错, 然后接着parse下一个token <code>foo</code>, 出错了(因为没有一个js语法中并没有一条production包含<code>var foo foo</code>的形式). 于是ASI被触发, 在换行符和offend token间加了个分号. <code>var foo</code>就被parse成了<a href="http://www.ecma-international.org/ecma-262/7.0/index.html#sec-variable-statement" target="_blank" rel="external">Variable Statement</a>, 然后后面的<code>foo = 2</code>也被成功parse了<sup>2</sup>.</p>
+<h3 id="Restricted-Production"><a href="#Restricted-Production" class="headerlink" title="Restricted Production"></a>Restricted Production</h3><p>Restricted production规定了触发ASI的几种特殊情况. </p>
+<p>以下几个位置出现换行符, 即使之后的token可以继续被合法parse, 也会触发ASI</p>
+<ol>
+<li><strong>后缀</strong>自增／自减运算符之前</li>
+<li>continue, break, return, throw, yield之后</li>
+<li>arrow function的<code>=&gt;</code>之前</li>
+</ol>
+<p>所以我们要尽量避免在上述位置加换行符（除非你知道自己是在做什么）.</p>
+<h2 id="Template和TemplateSubstitutionTail"><a href="#Template和TemplateSubstitutionTail" class="headerlink" title="Template和TemplateSubstitutionTail"></a>Template和TemplateSubstitutionTail</h2><p>这部分简而言之就是不要在表示字符串<strong>内容</strong>的部分换行. 这个很好理解了.<br>需要注意的是对于有替换的部分, 也就是<code>${}</code>的花括号内部,是可以当作普通的expression换行的<br>也就是说<br><figure class="highlight js"><table><tr><td class="code"><pre><div class="line"><span class="keyword">var</span> s = <span class="string">`hello <span class="subst">$&#123;person.name&#125;</span>!`</span></div></pre></td></tr></table></figure></p>
+<figure class="highlight js"><table><tr><td class="code"><pre><div class="line"><span class="keyword">var</span> s = <span class="string">`hello <span class="subst">$&#123;</span></span></div><div class="line">  person</div><div class="line">  .</div><div class="line">  name</div><div class="line">&#125;!`</div></pre></td></tr></table></figure>
+<p>是相同的.</p>
+<h2 id="玩具：breakline"><a href="#玩具：breakline" class="headerlink" title="玩具：breakline"></a>玩具：breakline</h2><p>在探究这个过程中本人写了<a href="https://github.com/flowmemo/breakline" target="_blank" rel="external">breakline</a>. 这个工具的目的就是把你的js代码拆成多行, 同时又不对代码的功能和逻辑造成实质的影响. </p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>在实际写代码过程中, 符合普通人逻辑的“正常”的换行是没有问题的. 如果说有需要注意的地方，也就是restricted production的第二条了, continue, break, return, throw, yield这几个关键字以及<code>=&gt;</code>前不要换行, 其他的地方换行的话…可以说也没什么美感了, 一般人不会那么干的.</p>
+<p><em>注</em><br>[1] 关于statement和expression的区别, 可以参考<a href="http://www.2ality.com/2012/09/expressions-vs-statements.html" target="_blank" rel="external">http://www.2ality.com/2012/09/expressions-vs-statements.html</a><br>[2] 实际上在<code>foo ＝ 2</code>后也自动插入了一个分号.</p>
+
+      
+    </div>
+    <footer>
+      
+        
+        
+  
+  <div class="tags">
+    <a href="/tags/javascript/">javascript</a>, <a href="/tags/js/">js</a>, <a href="/tags/ASI/">ASI</a>, <a href="/tags/grammar/">grammar</a>
+  </div>
+
+        
+  <div class="addthis addthis_toolbox addthis_default_style">
+    
+      <a class="addthis_button_facebook_like" fb:like:layout="button_count"></a>
+    
+    
+      <a class="addthis_button_tweet"></a>
+    
+    
+      <a class="addthis_button_google_plusone" g:plusone:size="medium"></a>
+    
+    
+      <a class="addthis_button_pinterest_pinit" pi:pinit:layout="horizontal"></a>
+    
+    <a class="addthis_counter addthis_pill_style"></a>
+  </div>
+  <script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js"></script>
+
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+<section id="comment">
+  <h1 class="title">Comments</h1>
+
+  
+  <div id="disqus_thread">
+    <noscript>Please enable JavaScript to view the <a href="//disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+  </div>
+  
+</section>
+
+</div></div>
+    <aside id="sidebar" class="alignright">
+  <div class="search">
+  <form action="//google.com/search" method="get" accept-charset="utf-8">
+    <input type="search" name="q" results="0" placeholder="Search">
+    <input type="hidden" name="q" value="site:flowmemo.github.io">
+  </form>
+</div>
+
+  
+
+  
+<div class="widget tag">
+  <h3 class="title">Tags</h3>
+  <ul class="entry">
+  
+    <li><a href="/tags/ASI/">ASI</a><small>1</small></li>
+  
+    <li><a href="/tags/Chakra/">Chakra</a><small>1</small></li>
+  
+    <li><a href="/tags/ECMA-262/">ECMA-262</a><small>1</small></li>
+  
+    <li><a href="/tags/ECMAScript/">ECMAScript</a><small>1</small></li>
+  
+    <li><a href="/tags/V8/">V8</a><small>1</small></li>
+  
+    <li><a href="/tags/algorithm/">algorithm</a><small>1</small></li>
+  
+    <li><a href="/tags/front-end/">front-end</a><small>1</small></li>
+  
+    <li><a href="/tags/grammar/">grammar</a><small>1</small></li>
+  
+    <li><a href="/tags/javascript/">javascript</a><small>4</small></li>
+  
+    <li><a href="/tags/js/">js</a><small>4</small></li>
+  
+  </ul>
+</div>
+
+</aside>
+    <div class="clearfix"></div>
+  </div>
+  <footer id="footer" class="inner"><div class="alignleft">
+  
+  &copy; 2017 flowmemo
+  
+</div>
+<div class="clearfix"></div></footer>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+
+<script type="text/javascript">
+var disqus_shortname = 'flowmemo';
+
+(function(){
+  var dsq = document.createElement('script');
+  dsq.type = 'text/javascript';
+  dsq.async = true;
+  dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+  (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+}());
+</script>
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+(function($){
+  $('.fancybox').fancybox();
+})(jQuery);
+</script>
+
+</body>
+</html>
